@@ -36,6 +36,8 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
+import com.yasirakbal.secureloanapi.feature.outbox.service.OutboxService;
+import com.yasirakbal.secureloanapi.feature.installment.entity.Installment;
 
 @Service
 @AllArgsConstructor
@@ -45,6 +47,7 @@ public class LoanApplicationService {
     private UserService userService;
     private EntityManager entityManager;
     private InstallmentService installmentService;
+    private OutboxService outboxService;
 
     @Transactional
     @Auditable(eventType = AuditEventType.LOAN_APPLICATION_CREATED, resource = "#customerId")
@@ -88,18 +91,100 @@ public class LoanApplicationService {
             var rejectedLoanApp = buildForRejectedCase(customerId, requestedLoanType, requestedAmount,
                     requestedTerm, purpose, monthlyInstallment, interestRate, totalPayment, dti, creationErrors);
 
-            loanApplicationRepository.save(rejectedLoanApp);
-            return rejectedLoanApp;
+            LoanApplication savedRejectedLoanApp = loanApplicationRepository.save(rejectedLoanApp);
+
+            String payload = """
+        {
+          "applicationId": %d,
+          "customerEmail": "%s",
+          "customerName": "%s",
+          "loanType": "%s",
+          "requestedAmount": "%s",
+          "rejectionReason": "%s"
+        }
+        """.formatted(
+                    savedRejectedLoanApp.getId(),
+                    customer.getEmail(),
+                    customer.getFullName(),
+                    savedRejectedLoanApp.getLoanType().name(),
+                    savedRejectedLoanApp.getRequestedAmount(),
+                    savedRejectedLoanApp.getRejectionReasons().replace("\"", "\\\"")
+            );
+
+            outboxService.saveEvent(
+                    "LOAN_AUTO_REJECTED",
+                    "LoanApplication",
+                    savedRejectedLoanApp.getId(),
+                    payload
+            );
+
+            return savedRejectedLoanApp;
         }
 
 
         var createdLoanApp = buildForSuccessCase(customerId, requestedLoanType, requestedAmount,
                 requestedTerm, purpose, monthlyInstallment, interestRate, totalPayment, dti, applicationStatusWithCreditScore);
-        loanApplicationRepository.save(createdLoanApp);
+        LoanApplication savedLoanApp = loanApplicationRepository.save(createdLoanApp);
 
-        return createdLoanApp;
+        if (savedLoanApp.getStatus().equals(LoanApplicationStatus.APPROVED)) {
+            Loan loanToCreate = buildLoanFromApplication(savedLoanApp);
+
+            List<Installment> installments = installmentService.calculateInstallments(loanToCreate);
+            loanToCreate.setInstallments(installments);
+
+            Loan createdLoan = loanRepository.save(loanToCreate);
+
+            String payload = """
+            {
+              "applicationId": %d,
+              "loanId": %d,
+              "customerEmail": "%s",
+              "customerName": "%s",
+              "loanType": "%s",
+              "approvedAmount": "%s",
+              "monthlyInstallment": "%s",
+              "termMonths": %d
+            }
+            """.formatted(
+                    savedLoanApp.getId(),
+                    createdLoan.getId(),
+                    customer.getEmail(),
+                    customer.getFullName(),
+                    savedLoanApp.getLoanType().name(),
+                    savedLoanApp.getRequestedAmount(),
+                    savedLoanApp.getMonthlyInstallment(),
+                    savedLoanApp.getRequestedTerm()
+            );
+
+            outboxService.saveEvent(
+                    "LOAN_AUTO_APPROVED",
+                    "LoanApplication",
+                    savedLoanApp.getId(),
+                    payload
+            );
+        }
+
+        return savedLoanApp;
     }
+    private Loan buildLoanFromApplication(LoanApplication loanApp) {
+        LocalDate currentDate = LocalDate.now();
 
+        return Loan.builder()
+                .applicationId(loanApp.getId())
+                .customer(loanApp.getCustomer())
+                .loanType(loanApp.getLoanType())
+                .principalAmount(loanApp.getRequestedAmount())
+                .interestRate(loanApp.getInterestRate())
+                .termMonths(loanApp.getRequestedTerm())
+                .monthlyInstallment(loanApp.getMonthlyInstallment())
+                .totalAmount(loanApp.getTotalPayment())
+                .status(LoanStatusType.ACTIVE)
+                .remainingBalance(loanApp.getTotalPayment())
+                .nextDueDate(currentDate.plusMonths(1))
+                .disbursementDate(currentDate)
+                .maturityDate(currentDate.plusMonths(loanApp.getRequestedTerm()))
+                .build();
+    }
     private LoanApplicationStatus determineApplicationStatusWithCreditScore(int creditScore) {
         if(creditScore < 500) {
             return LoanApplicationStatus.AUTO_REJECTED;

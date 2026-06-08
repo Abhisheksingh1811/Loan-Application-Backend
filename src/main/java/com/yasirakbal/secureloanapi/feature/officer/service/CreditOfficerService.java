@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-
+import com.yasirakbal.secureloanapi.feature.outbox.service.OutboxService;
 @Service
 @AllArgsConstructor
 public class CreditOfficerService {
@@ -24,11 +24,12 @@ public class CreditOfficerService {
     private LoanService loanService;
     private EntityManager entityManager;
     private InstallmentService installmentService;
-
+    private OutboxService outboxService;
     @Transactional
     @Auditable(eventType = AuditEventType.LOAN_APPROVED)
-    public Loan approveLoanApplication(Long loanAppId,Long officerId) {
-        LoanApplication approvedLoanApp = loanApplicationService.makeLoanApplicationStatusApproved(loanAppId,officerId);
+    public Loan approveLoanApplication(Long loanAppId, Long officerId) {
+        LoanApplication approvedLoanApp =
+                loanApplicationService.makeLoanApplicationStatusApproved(loanAppId, officerId);
 
         Loan loanToCreate = buildLoan(approvedLoanApp);
         List<Installment> installments = installmentService.calculateInstallments(loanToCreate);
@@ -36,15 +37,68 @@ public class CreditOfficerService {
 
         Loan createdLoan = loanService.createLoan(loanToCreate);
 
-        //audit log
+        String payload = """
+            {
+              "applicationId": %d,
+              "loanId": %d,
+              "customerEmail": "%s",
+              "customerName": "%s",
+              "loanType": "%s",
+              "approvedAmount": "%s",
+              "monthlyInstallment": "%s",
+              "termMonths": %d
+            }
+            """.formatted(
+                approvedLoanApp.getId(),
+                createdLoan.getId(),
+                approvedLoanApp.getCustomer().getEmail(),
+                approvedLoanApp.getCustomer().getFullName(),
+                approvedLoanApp.getLoanType().name(),
+                approvedLoanApp.getRequestedAmount(),
+                approvedLoanApp.getMonthlyInstallment(),
+                approvedLoanApp.getRequestedTerm()
+        );
+
+        outboxService.saveEvent(
+                "LOAN_APPROVED",
+                "LoanApplication",
+                approvedLoanApp.getId(),
+                payload
+        );
 
         return createdLoan;
     }
 
     @Transactional
     @Auditable(eventType = AuditEventType.LOAN_REJECTED)
-    public void rejectLoanApplication(Long loanAppId,Long officerId, String rejectionReason) {
-        loanApplicationService.makeLoanApplicationStatusRejected(loanAppId,officerId, rejectionReason);
+    public void rejectLoanApplication(Long loanAppId, Long officerId, String rejectionReason) {
+        LoanApplication rejectedLoanApp =
+                loanApplicationService.makeLoanApplicationStatusRejected(loanAppId, officerId, rejectionReason);
+
+        String payload = """
+            {
+              "applicationId": %d,
+              "customerEmail": "%s",
+              "customerName": "%s",
+              "loanType": "%s",
+              "requestedAmount": "%s",
+              "rejectionReason": "%s"
+            }
+            """.formatted(
+                rejectedLoanApp.getId(),
+                rejectedLoanApp.getCustomer().getEmail(),
+                rejectedLoanApp.getCustomer().getFullName(),
+                rejectedLoanApp.getLoanType().name(),
+                rejectedLoanApp.getRequestedAmount(),
+                rejectionReason.replace("\"", "\\\"")
+        );
+
+        outboxService.saveEvent(
+                "LOAN_REJECTED",
+                "LoanApplication",
+                rejectedLoanApp.getId(),
+                payload
+        );
     }
 
     private Loan buildLoan(LoanApplication loanApp) {
