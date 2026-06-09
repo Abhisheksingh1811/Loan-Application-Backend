@@ -21,6 +21,8 @@ import java.util.List;
 @Slf4j
 public class OutboxPublisher {
 
+    private static final int MAX_RETRY_COUNT = 3;
+
     private final OutboxEventRepository outboxEventRepository;
     private final NotificationSender notificationSender;
     private final ObjectMapper objectMapper;
@@ -46,15 +48,21 @@ public class OutboxPublisher {
     }
 
     private void processEvent(OutboxEvent event) {
+        if (event.getRetryCount() >= MAX_RETRY_COUNT) {
+            markAsDead(event, "Maximum retry count reached before processing");
+            return;
+        }
+
         try {
             event.setStatus(OutboxEventStatus.PROCESSING);
             outboxEventRepository.save(event);
 
             log.info(
-                    "Processing outbox event. id={}, eventType={}, aggregateId={}",
+                    "Processing outbox event. id={}, eventType={}, aggregateId={}, retryCount={}",
                     event.getId(),
                     event.getEventType(),
-                    event.getAggregateId()
+                    event.getAggregateId(),
+                    event.getRetryCount()
             );
 
             NotificationMessage message = buildNotificationMessage(event);
@@ -74,19 +82,51 @@ public class OutboxPublisher {
             );
 
         } catch (Exception ex) {
-            event.setStatus(OutboxEventStatus.FAILED);
-            event.setRetryCount(event.getRetryCount() + 1);
+            int newRetryCount = event.getRetryCount() + 1;
+            event.setRetryCount(newRetryCount);
             event.setErrorMessage(ex.getMessage());
 
-            outboxEventRepository.save(event);
+            if (newRetryCount >= MAX_RETRY_COUNT) {
+                event.setStatus(OutboxEventStatus.DEAD);
+                event.setProcessedAt(LocalDateTime.now());
 
-            log.error(
-                    "Outbox event failed. id={}, eventType={}, error={}",
-                    event.getId(),
-                    event.getEventType(),
-                    ex.getMessage()
-            );
+                log.error(
+                        "Outbox event moved to DEAD. id={}, eventType={}, retryCount={}, error={}",
+                        event.getId(),
+                        event.getEventType(),
+                        newRetryCount,
+                        ex.getMessage()
+                );
+            } else {
+                event.setStatus(OutboxEventStatus.FAILED);
+
+                log.error(
+                        "Outbox event failed. id={}, eventType={}, retryCount={}, error={}",
+                        event.getId(),
+                        event.getEventType(),
+                        newRetryCount,
+                        ex.getMessage()
+                );
+            }
+
+            outboxEventRepository.save(event);
         }
+    }
+
+    private void markAsDead(OutboxEvent event, String reason) {
+        event.setStatus(OutboxEventStatus.DEAD);
+        event.setProcessedAt(LocalDateTime.now());
+        event.setErrorMessage(reason);
+
+        outboxEventRepository.save(event);
+
+        log.error(
+                "Outbox event moved to DEAD. id={}, eventType={}, retryCount={}, reason={}",
+                event.getId(),
+                event.getEventType(),
+                event.getRetryCount(),
+                reason
+        );
     }
 
     private NotificationMessage buildNotificationMessage(OutboxEvent event) throws Exception {
@@ -96,9 +136,16 @@ public class OutboxPublisher {
         String customerName = payload.get("customerName").asText();
 
         return switch (event.getEventType()) {
-            case "LOAN_APPROVED", "LOAN_AUTO_APPROVED" -> buildLoanApprovedMessage(payload, customerEmail, customerName);
-            case "LOAN_REJECTED", "LOAN_AUTO_REJECTED" -> buildLoanRejectedMessage(payload, customerEmail, customerName);
-            default -> throw new IllegalArgumentException("Unsupported outbox event type: " + event.getEventType());
+            case "LOAN_APPROVED", "LOAN_AUTO_APPROVED" ->
+                    buildLoanApprovedMessage(payload, customerEmail, customerName);
+
+            case "LOAN_REJECTED", "LOAN_AUTO_REJECTED" ->
+                    buildLoanRejectedMessage(payload, customerEmail, customerName);
+
+            default ->
+                    throw new IllegalArgumentException(
+                            "Unsupported outbox event type: " + event.getEventType()
+                    );
         };
     }
 
