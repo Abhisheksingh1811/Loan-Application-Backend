@@ -3,9 +3,9 @@ spring:
     name: secureloan-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/secureloan-api
-    username: postgres
-    password: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/secureloan-api}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -43,11 +43,35 @@ server:
 
 app:
   mail:
-    from: YOUR_GMAIL_ADDRESS@gmail.com
+    from: ${MAIL_FROM:${MAIL_USERNAME:}}
+
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: SecureLoan API
+    description: Production-style loan management backend with JWT, Redis, Outbox, and Email Notifications
+    version: 1.0.0
 
 logging:
   level:
     root: INFO
-    com.ordermanagement: DEBUG
+    com.yasirakbal.secureloanapi: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE

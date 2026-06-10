@@ -1,5 +1,6 @@
 package com.yasirakbal.secureloanapi.common.redis;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.JedisPooled;
 
@@ -10,8 +11,11 @@ public class RedisService {
 
     private final JedisPooled jedis;
 
-    public RedisService() {
-        this.jedis = new JedisPooled("localhost", 6379);
+    public RedisService(
+            @Value("${app.redis.host:localhost}") String redisHost,
+            @Value("${app.redis.port:6379}") int redisPort
+    ) {
+        this.jedis = new JedisPooled(redisHost, redisPort);
     }
 
     public void set(String key, String value, Duration ttl) {
