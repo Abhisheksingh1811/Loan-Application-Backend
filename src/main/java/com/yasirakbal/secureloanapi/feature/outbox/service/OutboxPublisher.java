@@ -3,7 +3,7 @@ package com.yasirakbal.secureloanapi.feature.outbox.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yasirakbal.secureloanapi.feature.notification.dto.NotificationMessage;
-import com.yasirakbal.secureloanapi.feature.notification.sender.NotificationSender;
+import com.yasirakbal.secureloanapi.feature.notification.service.RabbitMQNotificationPublisher;
 import com.yasirakbal.secureloanapi.feature.outbox.entity.OutboxEvent;
 import com.yasirakbal.secureloanapi.feature.outbox.enums.OutboxEventStatus;
 import com.yasirakbal.secureloanapi.feature.outbox.repository.OutboxEventRepository;
@@ -24,7 +24,7 @@ public class OutboxPublisher {
     private static final int MAX_RETRY_COUNT = 3;
 
     private final OutboxEventRepository outboxEventRepository;
-    private final NotificationSender notificationSender;
+    private final RabbitMQNotificationPublisher rabbitMQNotificationPublisher;
     private final ObjectMapper objectMapper;
 
     @Scheduled(fixedDelay = 10000)
@@ -58,7 +58,7 @@ public class OutboxPublisher {
             outboxEventRepository.save(event);
 
             log.info(
-                    "Processing outbox event. id={}, eventType={}, aggregateId={}, retryCount={}",
+                    "Processing outbox event for RabbitMQ publish. id={}, eventType={}, aggregateId={}, retryCount={}",
                     event.getId(),
                     event.getEventType(),
                     event.getAggregateId(),
@@ -67,7 +67,7 @@ public class OutboxPublisher {
 
             NotificationMessage message = buildNotificationMessage(event);
 
-            notificationSender.send(message);
+            rabbitMQNotificationPublisher.publish(message);
 
             event.setStatus(OutboxEventStatus.SENT);
             event.setProcessedAt(LocalDateTime.now());
@@ -76,7 +76,7 @@ public class OutboxPublisher {
             outboxEventRepository.save(event);
 
             log.info(
-                    "Outbox event sent successfully. id={}, eventType={}",
+                    "Outbox event published to RabbitMQ successfully. id={}, eventType={}",
                     event.getId(),
                     event.getEventType()
             );
@@ -101,7 +101,7 @@ public class OutboxPublisher {
                 event.setStatus(OutboxEventStatus.FAILED);
 
                 log.error(
-                        "Outbox event failed. id={}, eventType={}, retryCount={}, error={}",
+                        "Outbox event failed during RabbitMQ publish. id={}, eventType={}, retryCount={}, error={}",
                         event.getId(),
                         event.getEventType(),
                         newRetryCount,

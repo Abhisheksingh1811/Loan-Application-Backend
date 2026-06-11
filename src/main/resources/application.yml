@@ -29,14 +29,20 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
 
 server:
   port: 8080
@@ -48,6 +54,11 @@ app:
   redis:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
+
+  rabbitmq:
+    notification-exchange: secureloan.notification.exchange
+    notification-queue: secureloan.notification.queue
+    notification-routing-key: secureloan.notification.email
 
 management:
   endpoints:
@@ -66,7 +77,7 @@ management:
 info:
   app:
     name: SecureLoan API
-    description: Production-style loan management backend with JWT, Redis, Outbox, and Email Notifications
+    description: Production-style loan management backend with JWT, Redis, Outbox, RabbitMQ, and Email Notifications
     version: 1.0.0
 
 logging:
