@@ -11,11 +11,20 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "installments", indexes = {
-        @Index(name = "idx_installments_loan_id", columnList = "loan_id"),
-        @Index(name = "idx_installments_due_date", columnList = "due_date"),
-        @Index(name = "idx_installments_status", columnList = "status")
-})
+@Table(
+        name = "installments",
+        indexes = {
+                @Index(name = "idx_installments_loan_id", columnList = "loan_id"),
+                @Index(name = "idx_installments_due_date", columnList = "due_date"),
+                @Index(name = "idx_installments_status", columnList = "status")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_installments_loan_installment_number",
+                        columnNames = {"loan_id", "installment_number"}
+                )
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,7 +35,7 @@ public class Installment extends BaseEntity {
     @JoinColumn(name = "loan_id")
     private Loan loan;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private Integer installmentNumber;
 
     @Column(nullable = false)
