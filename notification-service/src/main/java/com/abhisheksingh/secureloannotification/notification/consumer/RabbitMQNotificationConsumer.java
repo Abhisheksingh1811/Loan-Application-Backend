@@ -1,7 +1,7 @@
-package com.yasirakbal.secureloanapi.feature.notification.consumer;
+package com.abhisheksingh.secureloannotification.notification.consumer;
 
-import com.yasirakbal.secureloanapi.feature.notification.dto.NotificationMessage;
-import com.yasirakbal.secureloanapi.feature.notification.sender.NotificationSender;
+import com.abhisheksingh.secureloannotification.notification.dto.NotificationMessage;
+import com.abhisheksingh.secureloannotification.notification.sender.NotificationSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

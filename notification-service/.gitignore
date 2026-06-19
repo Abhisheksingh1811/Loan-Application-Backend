@@ -31,10 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
-### Environment Variables ###
-.env
-*.env
-.env.*
 
 notification-service/target/
 notification-service/*.iml

@@ -1,6 +1,6 @@
-package com.yasirakbal.secureloanapi.feature.notification.sender;
+package com.abhisheksingh.secureloannotification.notification.sender;
 
-import com.yasirakbal.secureloanapi.feature.notification.dto.NotificationMessage;
+import com.abhisheksingh.secureloannotification.notification.dto.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;

@@ -1,0 +1,53 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: secureloan-notification-service
+
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  mail:
+    from: ${MAIL_FROM:${MAIL_USERNAME:}}
+
+  rabbitmq:
+    notification-exchange: secureloan.notification.exchange
+    notification-queue: secureloan.notification.queue
+    notification-routing-key: secureloan.notification.email
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+info:
+  app:
+    name: SecureLoan Notification Service
+    description: RabbitMQ-based notification microservice for SecureLoan platform
+    version: 1.0.0
+
+logging:
+  level:
+    root: INFO
+    com.abhisheksingh.secureloannotification: DEBUG
