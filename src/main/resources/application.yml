@@ -84,5 +84,7 @@ logging:
   level:
     root: INFO
     com.yasirakbal.secureloanapi: DEBUG
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-no-correlation-id}] %logger{36} - %msg%n"

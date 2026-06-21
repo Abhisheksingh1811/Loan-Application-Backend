@@ -39,9 +39,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
+import lombok.extern.slf4j.Slf4j;
 @Service
 @AllArgsConstructor
+@Slf4j
 public class AuthService {
     private UserRepository userRepository;
     private PasswordEncoder passwordEncoder;
@@ -97,6 +98,12 @@ public class AuthService {
             AppUserAdapter userAdapter = (AppUserAdapter) authentication.getPrincipal();
 
             loginHistoryService.saveSuccessfulLogin(userAdapter.getUser(), requestInfo);
+            log.info(
+                    "User login successful | username={} | userId={}",
+                    userAdapter.getUsername(),
+                    userAdapter.getUser().getId()
+            );
+
 
             return getLoginResponse(userAdapter);
 
@@ -120,6 +127,12 @@ public class AuthService {
             User user = userRepository.findUserByUsername(username).orElse(null);
             if (user != null) {
                 loginHistoryService.saveFailedLogin(user, requestInfo, "Invalid password");
+                log.warn(
+                        "User login failed | username={} | userId={} | reason=Invalid password",
+                        username,
+                        user.getId()
+                );
+
                 throw userService.handleFailedLogin(user.getId());
             } else {
                 loginHistoryService.saveAnonymousAttempt(username, requestInfo);

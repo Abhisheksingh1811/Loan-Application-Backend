@@ -84,6 +84,22 @@ services:
     networks:
       - secureloan-api-network
 
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: secureloan-api-gateway
+    restart: always
+    ports:
+      - "8085:8080"
+    environment:
+      SERVER_PORT: 8080
+      SECURELOAN_API_BASE_URL: http://secureloan-api:8080
+    depends_on:
+      - secureloan-api
+    networks:
+      - secureloan-api-network
+
   notification-service:
     build:
       context: ./notification-service

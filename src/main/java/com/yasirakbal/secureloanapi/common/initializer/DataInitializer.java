@@ -32,7 +32,7 @@ public class DataInitializer implements CommandLineRunner {
 
                 createUser("AbhishekSingh", "Pass123!", "abhishsingh202@gmail.com", "Abhishek Singh",
                         "98765432109", "+905559876543", LocalDate.of(1988, 3, 20),
-                        new BigDecimal("35000.00"), 680, UserRole.CUSTOMER,District.WARANGAL),
+                        new BigDecimal("35000.00"), 780, UserRole.CUSTOMER,District.WARANGAL),
 
                 createUser("creditofficer", "Pass123!", "officer@secureloan.com", "Credit Officer",
                         "11111111111", "+905550000001", LocalDate.of(1985, 6, 10),
