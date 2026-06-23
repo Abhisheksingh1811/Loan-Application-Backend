@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class GetLoanResponseInstallmentsView {
+    private Long id;
     private Integer installmentNumber;
     private LocalDate dueDate;
     private BigDecimal amount;

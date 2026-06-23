@@ -42,8 +42,13 @@ public class GlobalExceptionHandler {
         log.warn("Validation failed: {}", ex.getMessage());
 
         Map<String, Object> validationErrors = new HashMap<>();
+
         ex.getBindingResult().getFieldErrors().forEach(error ->
                 validationErrors.put(error.getField(), error.getDefaultMessage())
+        );
+
+        ex.getBindingResult().getGlobalErrors().forEach(error ->
+                validationErrors.put(error.getObjectName(), error.getDefaultMessage())
         );
 
         ErrorResponse error = ErrorResponse.builder()

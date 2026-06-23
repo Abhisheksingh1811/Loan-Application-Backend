@@ -13,9 +13,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
 import java.time.LocalDateTime;
-
+import com.yasirakbal.secureloanapi.feature.admin.dto.GetAdminUsersPaginationResponse;
+import com.yasirakbal.secureloanapi.feature.admin.dto.GetAdminUsersResponse;
+import com.yasirakbal.secureloanapi.feature.user.enums.District;
+import com.yasirakbal.secureloanapi.feature.user.enums.UserRole;
 @RestController
 @RequestMapping("/api/admin")
 @AllArgsConstructor
@@ -55,20 +58,51 @@ public class AdminController {
     }
 
     @PostMapping("/users/{id}/lock")
-    public ResponseEntity<Void> lockUser(@RequestParam @Positive Long userId) {
-        adminService.lockUser(userId);
+    public ResponseEntity<Void> lockUser(@PathVariable @Positive Long id) {
+        adminService.lockUser(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/users/{id}/unlock")
-    public ResponseEntity<Void> unlockUser(@RequestParam @Positive Long userId) {
-        adminService.unlockUser(userId);
+    public ResponseEntity<Void> unlockUser(@PathVariable @Positive Long id) {
+        adminService.unlockUser(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/users/{id}/force-logout`")
-    public ResponseEntity<Void> forceLogoutUser(@RequestParam @Positive Long userId) {
-        adminService.forceLogoutUser(userId);
+    @PostMapping("/users/{id}/force-logout")
+    public ResponseEntity<Void> forceLogoutUser(@PathVariable @Positive Long id) {
+        adminService.forceLogoutUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<GetAdminUsersPaginationResponse> getAdminUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) UserRole role,
+            @RequestParam(required = false) District district,
+            @RequestParam(required = false) Boolean accountLocked,
+
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "20") Integer size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "DESC") String direction
+    ) {
+        Page<GetAdminUsersResponse> usersPage = adminService.getAdminUsers(
+                search,
+                role,
+                district,
+                accountLocked,
+                page,
+                size,
+                sortBy,
+                direction
+        );
+
+        return ResponseEntity.ok(
+                new GetAdminUsersPaginationResponse(
+                        usersPage,
+                        usersPage.getContent()
+                )
+        );
     }
 }

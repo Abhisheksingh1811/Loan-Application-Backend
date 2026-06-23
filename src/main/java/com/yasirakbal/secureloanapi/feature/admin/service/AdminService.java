@@ -1,18 +1,69 @@
 package com.yasirakbal.secureloanapi.feature.admin.service;
 
+import com.yasirakbal.secureloanapi.feature.admin.dto.GetAdminUsersResponse;
 import com.yasirakbal.secureloanapi.feature.audit.annotation.Auditable;
 import com.yasirakbal.secureloanapi.feature.audit.enums.AuditEventType;
 import com.yasirakbal.secureloanapi.feature.user.entity.User;
+import com.yasirakbal.secureloanapi.feature.user.enums.District;
+import com.yasirakbal.secureloanapi.feature.user.enums.UserRole;
 import com.yasirakbal.secureloanapi.feature.user.exception.UserNotFoundException;
 import com.yasirakbal.secureloanapi.feature.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class AdminService {
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public Page<GetAdminUsersResponse> getAdminUsers(
+            String search,
+            UserRole role,
+            District district,
+            Boolean accountLocked,
+            Integer page,
+            Integer size,
+            String sortBy,
+            String direction
+    ) {
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("ASC")
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+
+        return userRepository.searchAdminUsers(
+                search,
+                role,
+                district,
+                accountLocked,
+                pageable
+        ).map(this::mapToAdminUsersResponse);
+    }
+
+    private GetAdminUsersResponse mapToAdminUsersResponse(User user) {
+        GetAdminUsersResponse response = new GetAdminUsersResponse();
+
+        response.setId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setFullName(user.getFullName());
+        response.setRole(user.getRole());
+        response.setDistrict(user.getDistrict());
+        response.setAccountLocked(user.getAccountLocked());
+        response.setFailedLoginAttempts(user.getFailedLoginAttempts());
+        response.setLockedUntil(user.getLockedUntil());
+
+        return response;
+    }
 
     @Transactional
     @Auditable(eventType = AuditEventType.USER_LOCKED)
@@ -23,8 +74,6 @@ public class AdminService {
         user.setAccountLocked(true);
         user.setLockedUntil(null);
         userRepository.save(user);
-
-        //audit log
     }
 
     @Transactional
@@ -48,5 +97,4 @@ public class AdminService {
         user.setTokensInvalidatedAt(LocalDateTime.now());
         userRepository.save(user);
     }
-
 }
