@@ -1,9 +1,9 @@
 spring:
   application:
-    name: secureloan-api
+    name: loanaxis-api
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/secureloan-api}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/loanaxis-api}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -56,9 +56,9 @@ app:
     port: ${REDIS_PORT:6379}
 
   rabbitmq:
-    notification-exchange: secureloan.notification.exchange
-    notification-queue: secureloan.notification.queue
-    notification-routing-key: secureloan.notification.email
+    notification-exchange: loanaxis.notification.exchange
+    notification-queue: loanaxis.notification.queue
+    notification-routing-key: loanaxis.notification.email
 
 management:
   endpoints:
@@ -83,8 +83,10 @@ info:
 logging:
   level:
     root: INFO
-    com.yasirakbal.secureloanapi: DEBUG
+    com.abhisheksingh.loanaxisapi: DEBUG
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId:-no-correlation-id}] %logger{36} - %msg%n"
+
+

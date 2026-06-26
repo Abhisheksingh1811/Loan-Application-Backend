@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: secureloan-notification-service
+    name: loanaxis-notification-service
 
   rabbitmq:
     host: ${SPRING_RABBITMQ_HOST:localhost}
@@ -28,9 +28,9 @@ app:
     from: ${MAIL_FROM:${MAIL_USERNAME:}}
 
   rabbitmq:
-    notification-exchange: secureloan.notification.exchange
-    notification-queue: secureloan.notification.queue
-    notification-routing-key: secureloan.notification.email
+    notification-exchange: loanaxis.notification.exchange
+    notification-queue: loanaxis.notification.queue
+    notification-routing-key: loanaxis.notification.email
 
 management:
   endpoints:
@@ -50,4 +50,6 @@ info:
 logging:
   level:
     root: INFO
-    com.abhisheksingh.secureloannotification: DEBUG
+    com.abhisheksingh.loanaxisnotification: DEBUG
+
+

@@ -8,11 +8,11 @@
         <version>4.0.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.yasirakbal</groupId>
-    <artifactId>secureloan-api</artifactId>
+    <groupId>com.abhisheksingh</groupId>
+    <artifactId>loanaxis-api</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>secureloan-api</name>
-    <description>secureloan-api</description>
+    <name>loanaxis-api</name>
+    <description>loanaxis-api</description>
     <url/>
     <licenses>
         <license/>

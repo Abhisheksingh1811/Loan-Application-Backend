@@ -1,10 +1,10 @@
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: secureloan-api-postgres
+    container_name: loanaxis-api-postgres
     restart: always
     environment:
-      POSTGRES_DB: secureloan-api
+      POSTGRES_DB: loanaxis-api
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -12,16 +12,16 @@ services:
     volumes:
       - secureloan_postgres_data:/var/lib/postgresql/data
     networks:
-      - secureloan-api-network
+      - loanaxis-api-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d secureloan-api"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d loanaxis-api"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: secureloan-api-redis
+    container_name: loanaxis-api-redis
     restart: always
     ports:
       - "6379:6379"
@@ -29,7 +29,7 @@ services:
       - secureloan_redis_data:/data
     command: redis-server --appendonly yes
     networks:
-      - secureloan-api-network
+      - loanaxis-api-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -38,7 +38,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: secureloan-api-rabbitmq
+    container_name: loanaxis-api-rabbitmq
     restart: always
     ports:
       - "5672:5672"
@@ -47,23 +47,23 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     networks:
-      - secureloan-api-network
+      - loanaxis-api-network
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics check_port_connectivity"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  secureloan-api:
+  loanaxis-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: secureloan-api-app
+    container_name: loanaxis-api-app
     restart: always
     ports:
       - "8081:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/secureloan-api
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/loanaxis-api
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
 
@@ -82,29 +82,29 @@ services:
       rabbitmq:
         condition: service_healthy
     networks:
-      - secureloan-api-network
+      - loanaxis-api-network
 
   api-gateway:
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
-    container_name: secureloan-api-gateway
+    container_name: loanaxis-api-gateway
     restart: always
     ports:
       - "8085:8080"
     environment:
       SERVER_PORT: 8080
-      SECURELOAN_API_BASE_URL: http://secureloan-api:8080
+      SECURELOAN_API_BASE_URL: http://loanaxis-api:8080
     depends_on:
-      - secureloan-api
+      - loanaxis-api
     networks:
-      - secureloan-api-network
+      - loanaxis-api-network
 
   notification-service:
     build:
       context: ./notification-service
       dockerfile: Dockerfile
-    container_name: secureloan-notification-service
+    container_name: loanaxis-notification-service
     restart: always
     ports:
       - "8082:8082"
@@ -121,7 +121,7 @@ services:
       rabbitmq:
         condition: service_healthy
     networks:
-      - secureloan-api-network
+      - loanaxis-api-network
 
 volumes:
   secureloan_postgres_data:
@@ -130,5 +130,6 @@ volumes:
     driver: local
 
 networks:
-  secureloan-api-network:
+  loanaxis-api-network:
     driver: bridge
+

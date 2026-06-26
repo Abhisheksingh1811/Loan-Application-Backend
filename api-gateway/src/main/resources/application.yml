@@ -10,7 +10,7 @@ spring:
       server:
         webflux:
           routes:
-            - id: secureloan-api-route
+            - id: loanaxis-api-route
               uri: ${SECURELOAN_API_BASE_URL:http://localhost:8081}
               predicates:
                 - Path=/api/**
